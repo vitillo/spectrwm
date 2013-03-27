@@ -5,10 +5,10 @@
  * Copyright (c) 2009 Pierre-Yves Ritschard <pyr@spootnik.org>
  * Copyright (c) 2010 Tuukka Kataja <stuge@xor.fi>
  * Copyright (c) 2011 Jason L. Wright <jason@thought.net>
- * Copyright (c) 2011-2012 Reginald Kennedy <rk@rejii.com>
+ * Copyright (c) 2011-2013 Reginald Kennedy <rk@rejii.com>
  * Copyright (c) 2011-2012 Lawrence Teo <lteo@lteo.net>
  * Copyright (c) 2011-2012 Tiago Cunha <tcunha@gmx.com>
- * Copyright (c) 2012 David Hill <dhill@mindcry.org>
+ * Copyright (c) 2012-2013 David Hill <dhill@mindcry.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -3465,8 +3465,9 @@ switchws(struct swm_region *r, union arg *args)
 	this_r->ws = new_ws;
 	new_ws->r = this_r;
 
-	/* Set focus_pending before stacking. */
-	if (focus_mode != SWM_FOCUS_FOLLOW)
+	/* Set focus_pending before stacking, if needed. */
+	if (focus_mode != SWM_FOCUS_FOLLOW && (!new_ws->focus_pending ||
+	    validate_win(new_ws->focus_pending)))
 		new_ws->focus_pending = get_region_focus(new_ws->r);
 
 	stack();
