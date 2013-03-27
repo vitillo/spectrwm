@@ -388,6 +388,7 @@ XftColor	 bar_font_color;
 struct passwd	*pwd;
 char		*startup_exception;
 unsigned int	 nr_exceptions = 0;
+int              inherit_workspace = 1;
 
 /* layout manager data */
 struct swm_geometry {
@@ -3049,13 +3050,15 @@ spawn(int ws_idx, union arg *args, int close_fd)
 
 	setenv("LD_PRELOAD", SWM_LIB, 1);
 
-	if (asprintf(&ret, "%d", ws_idx) == -1) {
-		warn("spawn: asprintf SWM_WS");
-		_exit(1);
+	if (inherit_workspace) {
+		if (asprintf(&ret, "%d", ws_idx) == -1) {
+			warn("spawn: asprintf SWM_WS");
+			_exit(1);
+		}
+		setenv("_SWM_WS", ret, 1);
+		free(ret);
+		ret = NULL;
 	}
-	setenv("_SWM_WS", ret, 1);
-	free(ret);
-	ret = NULL;
 
 	if (asprintf(&ret, "%d", getpid()) == -1) {
 		warn("spawn: asprintf _SWM_PID");
@@ -6821,7 +6824,8 @@ enum {
 	SWM_S_URGENT_ENABLED,
 	SWM_S_VERBOSE_LAYOUT,
 	SWM_S_WINDOW_NAME_ENABLED,
-	SWM_S_WORKSPACE_LIMIT
+	SWM_S_WORKSPACE_LIMIT,
+	SWM_S_INHERIT_WORKSPACE
 };
 
 int
@@ -7032,6 +7036,9 @@ setconfvalue(char *selector, char *value, int flags)
 			workspace_limit = SWM_WS_MAX;
 		else if (workspace_limit < 1)
 			workspace_limit = 1;
+		break;
+	case SWM_S_INHERIT_WORKSPACE:
+		inherit_workspace = atoi(value);
 		break;
 	default:
 		return (1);
@@ -7289,6 +7296,7 @@ struct config_option configopt[] = {
 	{ "verbose_layout",		setconfvalue,	SWM_S_VERBOSE_LAYOUT },
 	{ "window_name_enabled",	setconfvalue,	SWM_S_WINDOW_NAME_ENABLED },
 	{ "workspace_limit",		setconfvalue,	SWM_S_WORKSPACE_LIMIT },
+	{ "inherit_workspace",          setconfvalue,   SWM_S_INHERIT_WORKSPACE},
 };
 
 void
