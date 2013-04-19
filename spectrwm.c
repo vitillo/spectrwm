@@ -500,6 +500,7 @@ struct workspace {
 	int			always_raise;	/* raise windows on focus */
 	int			bar_enabled;	/* bar visibility */
 	struct layout		*cur_layout;	/* current layout handlers */
+	struct layout 		*prev_layout;   /* previous layout handlers */
 	struct ws_win		*focus;		/* may be NULL */
 	struct ws_win		*focus_prev;	/* may be NULL */
 	struct ws_win		*focus_pending;	/* may be NULL */
@@ -733,6 +734,7 @@ enum keyfuncid {
 	KF_CYCLE_LAYOUT,
 	KF_FLIP_LAYOUT,
 	KF_FLOAT_TOGGLE,
+	KF_FULLSCREEN_TOGGLE,
 	KF_FOCUS_MAIN,
 	KF_FOCUS_NEXT,
 	KF_FOCUS_PREV,
@@ -912,6 +914,7 @@ struct ws_win	*find_unmanaged_window(xcb_window_t);
 struct ws_win	*find_window(xcb_window_t);
 void	 floating_toggle(struct swm_region *, union arg *);
 int	 floating_toggle_win(struct ws_win *);
+void	 fullscreen_toggle(struct swm_region *, union arg *);
 void	 focus(struct swm_region *, union arg *);
 #ifdef SWM_DEBUG
 void	 focusin(xcb_focus_in_event_t *);
@@ -3959,6 +3962,7 @@ cycle_layout(struct swm_region *r, union arg *args)
 
 	DNPRINTF(SWM_D_EVENT, "cycle_layout: workspace: %d\n", ws->idx);
 
+	ws->prev_layout = NULL;
 	ws->cur_layout++;
 	if (ws->cur_layout->l_stack == NULL)
 		ws->cur_layout = &layouts[0];
@@ -5235,6 +5239,27 @@ floating_toggle_win(struct ws_win *win)
 }
 
 void
+fullscreen_toggle(struct swm_region *r, union arg *args)
+{
+	struct workspace 	*ws = r->ws;
+
+	/* suppress unused warning since var is not needed */
+	(void)args;
+
+	if (ws->cur_layout != &layouts[2]){
+		ws->prev_layout = ws->cur_layout;
+		ws->cur_layout = &layouts[2];
+	} else if (ws->prev_layout)
+		ws->cur_layout = ws->prev_layout;
+
+	stack();
+	bar_draw();
+
+	focus_win(get_region_focus(r));
+	focus_flush();
+}
+
+void
 floating_toggle(struct swm_region *r, union arg *args)
 {
 	struct ws_win		*win = r->ws->focus;
@@ -5682,6 +5707,7 @@ struct keyfunc {
 	{ "cycle_layout",	cycle_layout,	{0} },
 	{ "flip_layout",	stack_config,	{.id = SWM_ARG_ID_FLIPLAYOUT} },
 	{ "float_toggle",	floating_toggle,{0} },
+	{ "fullscreen_toggle",	fullscreen_toggle,{0} },
 	{ "focus_main",		focus,		{.id = SWM_ARG_ID_FOCUSMAIN} },
 	{ "focus_next",		focus,		{.id = SWM_ARG_ID_FOCUSNEXT} },
 	{ "focus_prev",		focus,		{.id = SWM_ARG_ID_FOCUSPREV} },
@@ -6367,6 +6393,7 @@ setup_keys(void)
 	setkeybinding(MODKEY,		XK_space,	KF_CYCLE_LAYOUT,NULL);
 	setkeybinding(MODKEY_SHIFT,	XK_backslash,	KF_FLIP_LAYOUT,	NULL);
 	setkeybinding(MODKEY,		XK_t,		KF_FLOAT_TOGGLE,NULL);
+	setkeybinding(MODKEY,		XK_e,		KF_FULLSCREEN_TOGGLE,NULL);
 	setkeybinding(MODKEY,		XK_m,		KF_FOCUS_MAIN,	NULL);
 	setkeybinding(MODKEY,		XK_j,		KF_FOCUS_NEXT,	NULL);
 	setkeybinding(MODKEY,		XK_Tab,		KF_FOCUS_NEXT,	NULL);
